@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coordenadas · Un mapa de tus valores</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a2e;
+    --paper: #f5f0e8;
+    --accent: #c4602a;
+    --muted: #8a8070;
+    --border: #d4c9b0;
+    --card: #faf7f2;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  .container {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 60px 24px 100px;
+    position: relative;
+    z-index: 1;
+  }
+
+  #cover {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px 0;
+  }
+
+  .eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 24px;
+    font-weight: 500;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(2.4rem, 6vw, 4rem);
+    line-height: 1.1;
+    color: var(--ink);
+    margin-bottom: 16px;
+  }
+
+  h1 em { font-style: italic; color: var(--accent); }
+
+  .subtitle {
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 48px;
+    font-weight: 400;
+  }
+
+  .intro-text {
+    font-size: 1rem;
+    line-height: 1.85;
+    color: #3a3a4a;
+    border-left: 2px solid var(--accent);
+    padding-left: 24px;
+    margin-bottom: 48px;
+    max-width: 640px;
+  }
+
+  .intro-text p + p { margin-top: 16px; }
+
+  .note-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 20px 24px;
+    font-size: 0.875rem;
+    line-height: 1.7;
+    color: var(--muted);
+    margin-bottom: 48px;
+    max-width: 640px;
+  }
+
+  .btn-start {
+    display: inline-block;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 16px 40px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.875rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    font-weight: 500;
+  }
+  .btn-start:hover { background: var(--accent); transform: translateY(-1px); }
+
+  #survey { display: none; }
+
+  .progress-bar-wrap {
+    position: sticky;
+    top: 0;
+    background: var(--paper);
+    padding: 16px 0 12px;
+    z-index: 10;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+
+  .progress-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+
+  .progress-track { height: 2px; background: var(--border); width: 100%; }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  .question-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 28px 28px 24px;
+    margin-bottom: 20px;
+    transition: border-color 0.2s;
+  }
+
+  .question-card:hover { border-color: var(--muted); }
+
+  .question-number {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+
+  .question-text {
+    font-size: 1rem;
+    line-height: 1.65;
+    margin-bottom: 20px;
+    color: var(--ink);
+  }
+
+  .scale-wrap { display: flex; flex-direction: column; gap: 8px; }
+
+  .scale-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .scale-buttons { display: flex; gap: 6px; }
+
+  .scale-btn {
+    flex: 1;
+    height: 40px;
+    border: 1px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.875rem;
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+
+  .scale-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .scale-btn[data-val="1"].selected { background: #8a3030; border-color: #8a3030; color: #faf7f2; font-weight: 500; }
+  .scale-btn[data-val="2"].selected { background: #9a4040; border-color: #9a4040; color: #faf7f2; font-weight: 500; }
+  .scale-btn[data-val="3"].selected { background: #7a6a50; border-color: #7a6a50; color: #faf7f2; font-weight: 500; }
+  .scale-btn[data-val="4"].selected { background: #5a5a6a; border-color: #5a5a6a; color: #faf7f2; font-weight: 500; }
+  .scale-btn[data-val="5"].selected { background: #3a6a5a; border-color: #3a6a5a; color: #faf7f2; font-weight: 500; }
+  .scale-btn[data-val="6"].selected { background: #1a5a7a; border-color: #1a5a7a; color: #faf7f2; font-weight: 500; }
+  .scale-btn[data-val="7"].selected { background: #1a3a5a; border-color: #1a3a5a; color: #faf7f2; font-weight: 500; }
+
+  .btn-submit {
+    display: block;
+    width: 100%;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.875rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    margin-top: 48px;
+    transition: background 0.2s;
+    font-weight: 500;
+  }
+  .btn-submit:hover { background: var(--accent); }
+
+  .unanswered-warning {
+    background: #fff3cd;
+    border: 1px solid #e6a817;
+    padding: 12px 16px;
+    font-size: 0.875rem;
+    color: #856404;
+    margin-top: 16px;
+    display: none;
+  }
+
+  #result { display: none; }
+
+  .result-header {
+    padding: 48px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+
+  .result-header h2 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 2rem;
+    margin-bottom: 8px;
+  }
+
+  .result-body { font-size: 1rem; line-height: 1.85; color: #2a2a3a; }
+  .result-body p { margin-bottom: 20px; }
+  .result-body strong {
+    color: var(--ink);
+    font-weight: 500;
+    display: block;
+    margin-top: 32px;
+    margin-bottom: 6px;
+    font-size: 0.78rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+  }
+
+  .loading-wrap { padding: 80px 0; text-align: center; }
+
+  .loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 24px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-text {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .dimension-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 20px 0 0;
+  }
+
+  .chip {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .btn-restart {
+    display: inline-block;
+    margin-top: 48px;
+    background: transparent;
+    border: 1px solid var(--ink);
+    color: var(--ink);
+    padding: 12px 32px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+  }
+  .btn-restart:hover { background: var(--ink); color: var(--paper); }
+
+  @media (max-width: 600px) {
+    .scale-buttons { gap: 3px; }
+    .scale-btn { font-size: 0.75rem; height: 36px; }
+    h1 { font-size: 2rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container" id="cover">
+  <p class="eyebrow">Instrumento de valores sociales y políticos · 2025</p>
+  <h1>Coordenadas<br><em>entre el orden<br>y el cambio</em></h1>
+  <p class="subtitle">Un mapa personal sobre poder, justicia y futuro</p>
+
+  <div class="intro-text">
+    <p>Las certezas se erosionan más rápido de lo que se reconstruyen. En distintos lugares del mundo emergen liderazgos que cuestionan acuerdos que parecían estables: el rol del Estado, el alcance del mercado, el valor de las instituciones, los límites de la soberanía. Al mismo tiempo, tensiones migratorias, conflictos persistentes, el avance de la inteligencia artificial sobre el mundo del trabajo y la proliferación de teorías conspirativas conviven con transformaciones más silenciosas: caída de la natalidad, redefinición del éxito personal, nuevas formas de vincularnos.</p>
+    <p>En este contexto, la pregunta no es solo qué está pasando en el mundo. Es qué tipo de mundo consideramos aceptable —y para quién.</p>
+    <p>Este cuestionario no busca coherencia perfecta ni tiene respuestas correctas. Muchas afirmaciones están diseñadas para entrar en tensión entre sí, porque esa incomodidad revela algo que las respuestas cómodas suelen ocultar. Respondé con honestidad, incluso cuando tus propias respuestas no encajen del todo.</p>
+  </div>
+
+  <div class="note-box">
+    <strong>Cómo funciona:</strong> 40 afirmaciones en escala del 1 al 7, donde 1 es <em>nada de acuerdo</em> y 7 es <em>totalmente de acuerdo</em>. No hay tiempo límite. Al finalizar, una inteligencia artificial analizará el conjunto de tus respuestas y generará un informe personalizado.
+  </div>
+
+  <button class="btn-start" onclick="startSurvey()">Comenzar →</button>
+</div>
+
+<div class="container" id="survey">
+  <div class="progress-bar-wrap">
+    <div class="progress-meta">
+      <span id="progress-label">0 de 40 respondidas</span>
+      <span id="progress-pct">0%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+  </div>
+  <div id="questions-container"></div>
+  <div class="unanswered-warning" id="warning">
+    Falta responder algunas afirmaciones. La primera pendiente fue marcada arriba.
+  </div>
+  <button class="btn-submit" onclick="submitSurvey()">Analizar mis respuestas →</button>
+</div>
+
+<div class="container" id="result">
+  <div class="result-header">
+    <p class="eyebrow">Análisis de resultados</p>
+    <h2>Tu perfil de valores</h2>
+    <div class="dimension-chips" id="dimension-chips"></div>
+  </div>
+  <div id="result-content">
+    <div class="loading-wrap">
+      <div class="loading-spinner"></div>
+      <p class="loading-text">Analizando tus respuestas…</p>
+    </div>
+  </div>
+  <button class="btn-restart" onclick="restart()">← Reiniciar</button>
+</div>
+
+<script>
+const QUESTION_BANK = [
+  { id:1,  dim:1, text:"Una sociedad justa es aquella donde las diferencias económicas entre personas son mínimas." },
+  { id:2,  dim:1, text:"Es aceptable que existan grandes desigualdades económicas si reflejan diferencias de mérito y esfuerzo individual." },
+  { id:3,  dim:1, text:"Las desigualdades económicas son, en su mayoría, consecuencia del diseño del sistema y no de las decisiones individuales." },
+  { id:4,  dim:1, text:"La libertad individual es más valiosa que la igualdad de resultados, aunque esa libertad genere brechas." },
+  { id:5,  dim:1, text:"La igualdad de oportunidades al inicio de la vida es condición suficiente para que los resultados sean justos." },
+  { id:6,  dim:2, text:"El mercado libre, con mínima intervención estatal, es el mecanismo más eficiente para organizar la economía." },
+  { id:7,  dim:2, text:"El Estado debe intervenir activamente para corregir desigualdades que el mercado no resuelve por sí solo." },
+  { id:8,  dim:2, text:"La salud, la educación y el acceso al agua deben estar garantizados por el Estado, no dejarse al mercado." },
+  { id:9,  dim:2, text:"La redistribución excesiva de riqueza desincentiva el esfuerzo y termina perjudicando el desarrollo." },
+  { id:10, dim:2, text:"La concentración de riqueza en pocas manos es un problema estructural que la democracia debe resolver activamente." },
+  { id:11, dim:3, text:"Una sociedad madura debe adaptar sus instituciones para integrar activamente a sus minorías." },
+  { id:12, dim:3, text:"Las políticas de acción afirmativa son necesarias para corregir desigualdades históricas." },
+  { id:13, dim:3, text:"La igualdad formal ante la ley es suficiente: las políticas diferenciadas por identidad generan más división que solución." },
+  { id:14, dim:3, text:"Quienes migran a un país deben adaptarse a la cultura dominante de ese país." },
+  { id:15, dim:3, text:"El énfasis excesivo en las demandas de minorías puede terminar fragmentando la cohesión social." },
+  { id:16, dim:4, text:"La democracia es el mejor sistema de gobierno disponible, incluso cuando produce resultados lentos o imperfectos." },
+  { id:17, dim:4, text:"En situaciones de crisis grave, es legítimo que el Estado limite temporalmente ciertas libertades individuales." },
+  { id:18, dim:4, text:"Un gobierno fuerte y decisivo es preferible a uno deliberativo pero lento, aunque eso implique menos contrapesos." },
+  { id:19, dim:4, text:"La concentración de poder en un solo líder o partido es siempre peligrosa, sin importar sus intenciones." },
+  { id:20, dim:4, text:"Las instituciones democráticas frecuentemente protegen intereses de élites más que los del ciudadano común." },
+  { id:21, dim:5, text:"Los países poderosos tienen responsabilidad especial en la resolución de conflictos internacionales, aunque intervengan en soberanías ajenas." },
+  { id:22, dim:5, text:"El sufrimiento de poblaciones civiles en zonas de conflicto debe pesar más que los intereses estratégicos de los Estados." },
+  { id:23, dim:5, text:"La comunidad internacional tiene el deber de sancionar a gobiernos que violan derechos humanos, incluso si son aliados." },
+  { id:24, dim:5, text:"Las causas de los conflictos geopolíticos actuales son demasiado complejas para reducirse a la oposición entre buenos y malos." },
+  { id:25, dim:5, text:"Un mundo con organismos internacionales más fuertes y vinculantes sería más justo y estable que el actual." },
+  { id:26, dim:6, text:"La inteligencia artificial y la automatización probablemente amplíen la desigualdad si no son reguladas." },
+  { id:27, dim:6, text:"Los gobiernos deberían regular el avance tecnológico aunque eso frene la innovación." },
+  { id:28, dim:6, text:"Las nuevas tecnologías ofrecen más oportunidades que riesgos para la mayoría de las personas." },
+  { id:29, dim:6, text:"Frente al avance de la IA, la responsabilidad de adaptarse recae principalmente en los individuos, no en los Estados." },
+  { id:30, dim:6, text:"El desarrollo tecnológico sin regulación puede concentrar poder económico y político de forma peligrosa." },
+  { id:31, dim:7, text:"Los grandes medios de comunicación responden más a intereses económicos o políticos que a la verdad." },
+  { id:32, dim:7, text:"Existe información relevante que los gobiernos ocultan sistemáticamente a sus ciudadanos." },
+  { id:33, dim:7, text:"La expansión de teorías conspirativas es un síntoma de crisis de confianza institucional más que de irracionalidad." },
+  { id:34, dim:7, text:"El escepticismo hacia las instituciones y los expertos es, en general, una actitud saludable." },
+  { id:35, dim:7, text:"La desinformación es una amenaza real para la democracia que justifica alguna forma de regulación del discurso público." },
+  { id:36, dim:8, text:"Una vida satisfactoria depende más de las decisiones personales que de las condiciones del sistema en que uno vive." },
+  { id:37, dim:8, text:"El tiempo libre, el deporte y la cultura son tan importantes para el desarrollo humano como la productividad económica." },
+  { id:38, dim:8, text:"La educación formal actual no prepara adecuadamente a las personas para los desafíos del siglo XXI." },
+  { id:39, dim:8, text:"La caída de la natalidad en países desarrollados refleja un problema de sentido y proyecto colectivo, más que de economía." },
+  { id:40, dim:8, text:"La corrupción y el oportunismo son rasgos humanos casi universales que ningún sistema puede eliminar completamente." },
+];
+
+const DIM_NAMES = {
+  1:"Sociedad y justicia", 2:"Estado y economía", 3:"Minorías e integración",
+  4:"Poder y democracia", 5:"Geopolítica", 6:"Tecnología y trabajo",
+  7:"Información y verdad", 8:"Bienestar y sentido"
+};
+
+const ANALYSIS_PROMPT = `Sos un analista especializado en valores políticos, sociales y psicológicos. Recibís las respuestas de una persona a un cuestionario de 40 afirmaciones en escala 1-7 (1=nada de acuerdo, 7=totalmente de acuerdo).
+
+El cuestionario tiene 8 dimensiones que el encuestado desconoce:
+1. Sociedad y justicia (Q1-Q5): igualdad de resultados vs. meritocracia. Q5 es repregunta cruzada: si la oportunidad inicial basta, la desigualdad de resultados se vuelve aceptable — tensiona con Q1 y Q3.
+2. Estado y economía (Q6-Q10): intervención estatal vs. libre mercado. Q9 es repregunta cruzada: redistribución como desincentivo — tensiona con Q7 y Q8.
+3. Minorías e integración (Q11-Q15): inclusión activa vs. asimilación. Q13 y Q15 son repreguntas cruzadas — tensionan con Q11 y Q12.
+4. Poder y democracia (Q16-Q20): institucionalismo vs. eficiencia autoritaria. Q19 es repregunta cruzada — tensiona con Q18.
+5. Geopolítica (Q21-Q25): cosmopolitismo vs. realismo soberanista. Q24 modera Q21-Q23.
+6. Tecnología y trabajo (Q26-Q30): regulación vs. libre innovación. Q28 y Q29 son repreguntas cruzadas — tensionan con Q26 y Q27.
+7. Información y verdad (Q31-Q35): escepticismo institucional vs. confianza en expertos. Q34 es repregunta cruzada — tensiona con Q35.
+8. Bienestar y sentido (Q36-Q40): responsabilidad individual vs. determinismo sistémico.
+
+INSTRUCCIONES:
+1. Analizá el promedio por dimensión e interpretá su dirección.
+2. Describí el eje político-económico dominante con precisión, sin usar etiquetas de partidos ni colores políticos.
+3. Analizá la posición frente a minorías y diversidad.
+4. Evaluá la tensión democracia/autoridad.
+5. Medí el escepticismo institucional y su coherencia con el resto del perfil.
+6. Analizá coherencia interna usando repreguntas. Distinguí tensión genuina de incoherencia real.
+7. Identificá si la visión de bienestar es colectivista o individualista.
+
+FORMATO (español rioplatense, tono académico pero accesible):
+- Párrafo inicial de caracterización general (3-4 líneas), sin etiquetas políticas.
+- Una sección por dimensión con nombre en **negrita**, análisis de 2-3 líneas en prosa.
+- Sección **Coherencia interna**: análisis de repreguntas cruzadas.
+- Sección **Tensiones significativas**: contradicciones más reveladoras del perfil.
+- Párrafo final **Síntesis** integrador.
+- Prosa fluida. Mínimas listas. No le decís a la persona qué debería pensar. Solo describís lo que las respuestas revelan.`;
+
+let shuffledQuestions = [];
+let answers = {};
+let currentAnswered = 0;
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startSurvey() {
+  shuffledQuestions = shuffle(QUESTION_BANK);
+  document.getElementById('cover').style.display = 'none';
+  document.getElementById('survey').style.display = 'block';
+  renderQuestions();
+  window.scrollTo(0, 0);
+}
+
+function renderQuestions() {
+  const container = document.getElementById('questions-container');
+  container.innerHTML = shuffledQuestions.map((q, i) => `
+    <div class="question-card" id="card-${q.id}">
+      <p class="question-number">Afirmación ${i + 1} de 40</p>
+      <p class="question-text">${q.text}</p>
+      <div class="scale-wrap">
+        <div class="scale-labels">
+          <span>Nada de acuerdo</span>
+          <span>Totalmente de acuerdo</span>
+        </div>
+        <div class="scale-buttons">
+          ${[1,2,3,4,5,6,7].map(v => `
+            <button class="scale-btn" data-val="${v}" onclick="selectAnswer(${q.id}, ${v}, this)">${v}</button>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectAnswer(qid, val, btn) {
+  const card = document.getElementById('card-' + qid);
+  card.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  const isNew = !(qid in answers);
+  answers[qid] = val;
+  if (isNew) { currentAnswered++; updateProgress(); }
+}
+
+function updateProgress() {
+  const pct = Math.round((currentAnswered / 40) * 100);
+  document.getElementById('progress-label').textContent = `${currentAnswered} de 40 respondidas`;
+  document.getElementById('progress-pct').textContent = pct + '%';
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+function submitSurvey() {
+  const unanswered = shuffledQuestions.filter(q => !(q.id in answers));
+  if (unanswered.length > 0) {
+    document.getElementById('warning').style.display = 'block';
+    const fc = document.getElementById('card-' + unanswered[0].id);
+    fc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    fc.style.borderColor = '#c4602a';
+    setTimeout(() => fc.style.borderColor = '', 2000);
+    return;
+  }
+  document.getElementById('warning').style.display = 'none';
+  document.getElementById('survey').style.display = 'none';
+  document.getElementById('result').style.display = 'block';
+  window.scrollTo(0, 0);
+  analyzeWithAI();
+}
+
+async function analyzeWithAI() {
+  const dimScores = {};
+  for (let d = 1; d <= 8; d++) {
+    const qs = QUESTION_BANK.filter(q => q.dim === d);
+    dimScores[d] = (qs.reduce((s, q) => s + (answers[q.id] || 4), 0) / qs.length).toFixed(2);
+  }
+
+  document.getElementById('dimension-chips').innerHTML =
+    Object.entries(DIM_NAMES).map(([d, name]) =>
+      `<span class="chip">${name} · ${dimScores[d]}</span>`
+    ).join('');
+
+  let summary = 'RESPUESTAS INDIVIDUALES:\n\n';
+  QUESTION_BANK.forEach(q => {
+    summary += `Q${q.id}: "${q.text}"\nRespuesta: ${answers[q.id]}/7\n\n`;
+  });
+  summary += '\nPROMEDIOS POR DIMENSIÓN:\n';
+  Object.entries(DIM_NAMES).forEach(([d, name]) => {
+    summary += `${name}: ${dimScores[d]}/7\n`;
+  });
+
+  try {
+    const response = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system: ANALYSIS_PROMPT,
+        userMessage: summary
+      })
+    });
+    const data = await response.json();
+    const text = data.content?.find(b => b.type === 'text')?.text || 'No se pudo generar el análisis.';
+    renderResult(text);
+  } catch(err) {
+    document.getElementById('result-content').innerHTML =
+      '<p style="color:var(--muted);padding:40px 0">Error al conectar con el servicio de análisis. Por favor intentá nuevamente.</p>';
+  }
+}
+
+function renderResult(text) {
+  const html = text
+    .split('\n\n')
+    .map(para => `<p>${para.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`)
+    .join('');
+  document.getElementById('result-content').innerHTML = `<div class="result-body">${html}</div>`;
+}
+
+function restart() {
+  answers = {}; currentAnswered = 0; shuffledQuestions = [];
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('cover').style.cssText = 'display:flex;flex-direction:column;justify-content:center;';
+  window.scrollTo(0, 0);
+}
+</script>
+</body>
+</html>
